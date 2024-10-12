@@ -16,9 +16,32 @@ export const createCar = async (fileId: string, fileName: string) => {
       `generate-car --single -i ${uploadPathFormat}/${fileId}/${nameFormat} -o ${carPathFormat} -p ${uploadPathFormat}/${fileId}/${nameFormat}`
     )
     const jsonResponse = JSON.parse(car)
-    const carSize: any = await execute(
-      `stat --format="%s" ${carPathFormat}/${jsonResponse['PieceCid']}.car`
-    )
+    const carFilePath = `${carPathFormat}/${jsonResponse['PieceCid']}.car`
+    const newCarFilePath = `${carPathFormat}/${fileId}.car`
+    let carSize = 0
+    // Get the size of the .car file
+    fs.stat(carFilePath, (err, stats) => {
+      if (err) {
+        console.error('Error getting file size:', err)
+        return
+      }
+      carSize = stats.size
+      console.log(`Size of ${carFilePath}: ${stats.size} bytes`)
+    })
+
+    // Rename the file from PieceCid.car to fileId.car
+    fs.rename(carFilePath, newCarFilePath, (err) => {
+      if (err) {
+        console.error('Error renaming file:', err)
+        return
+      }
+      console.log(`File renamed from ${carFilePath} to ${newCarFilePath}`)
+    })
+
+    if (carSize === 0) {
+      console.error('Error getting file size:', carFilePath)
+      return
+    }
     // // Push CAR to S3
     // const pushToS3 = await uploadS3(jsonResponse['PieceCid'], fileId)
     // if (!pushToS3) {
@@ -30,7 +53,7 @@ export const createCar = async (fileId: string, fileName: string) => {
       id: fileId,
       payloadCid: jsonResponse['Ipld']['Link'][0].Hash,
       pieceCid: jsonResponse['PieceCid'],
-      carSize: parseInt(carSize.trim()),
+      carSize: carSize,
       pieceSize: jsonResponse['PieceSize'],
       fileStatus: 'CAR Created',
     })

@@ -12,6 +12,14 @@ export const download_car_head = async (
   try {
     const fileName = req.query.fileId
     const filePath = path.join(config.carPath, fileName)
+
+    const resolvedPath = path.resolve(filePath)
+
+    if (!isPathInside(config.carPath, resolvedPath)) {
+      res.status(400).send('Invalid file path')
+      return
+    }
+
     chalk.yellow(`Miner getting file metadata: ${req.query.fileId}`)
 
     fs.stat(filePath, (err, stats) => {
@@ -47,6 +55,14 @@ export const download_car = async (
   try {
     const fileName = `${req.query.fileId}`
     const filePath = path.join(config.carPath, fileName)
+
+    const resolvedPath = path.resolve(filePath)
+
+    if (!isPathInside(config.carPath, resolvedPath)) {
+      res.status(400).send('Invalid file path')
+      return
+    }
+
     console.log(chalk.yellow(`Miner downloading file: ${req.query.fileId}`))
 
     fs.stat(filePath, (err, stats) => {
@@ -71,4 +87,9 @@ export const download_car = async (
     console.log(chalk.red(`Error: Failed to download- ${req.query.fileId}`))
     next(error)
   }
+}
+
+const isPathInside = (parent: string, child: string) => {
+  const relative = path.relative(parent, child)
+  return relative && !relative.startsWith('..') && !path.isAbsolute(relative)
 }
