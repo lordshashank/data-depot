@@ -1,4 +1,4 @@
-import fs from 'fs'
+import fs from 'fs/promises'
 import chalk from 'chalk'
 import config from '../../../config'
 // import { uploadS3 } from './uploadS3'
@@ -18,30 +18,13 @@ export const createCar = async (fileId: string, fileName: string) => {
     const jsonResponse = JSON.parse(car)
     const carFilePath = `${carPathFormat}/${jsonResponse['PieceCid']}.car`
     const newCarFilePath = `${carPathFormat}/${fileId}.car`
-    let carSize = 0
-    // Get the size of the .car file
-    fs.stat(carFilePath, (err, stats) => {
-      if (err) {
-        console.error('Error getting file size:', err)
-        return
-      }
-      carSize = stats.size
-      console.log(`Size of ${carFilePath}: ${stats.size} bytes`)
-    })
-
-    // Rename the file from PieceCid.car to fileId.car
-    fs.rename(carFilePath, newCarFilePath, (err) => {
-      if (err) {
-        console.error('Error renaming file:', err)
-        return
-      }
-      console.log(`File renamed from ${carFilePath} to ${newCarFilePath}`)
-    })
-
+    const carSize = (await fs.stat(carFilePath)).size
     if (carSize === 0) {
-      console.error('Error getting file size:', carFilePath)
+      console.error('Error: File size is 0')
       return
     }
+    fs.rename(carFilePath, newCarFilePath)
+
     // // Push CAR to S3
     // const pushToS3 = await uploadS3(jsonResponse['PieceCid'], fileId)
     // if (!pushToS3) {
@@ -59,7 +42,7 @@ export const createCar = async (fileId: string, fileName: string) => {
     })
 
     // Remove Uploaded file
-    fs.rmSync(`${config.uploadPath}/${fileId}`, { recursive: true })
+    fs.rm(`${config.uploadPath}/${fileId}`, { recursive: true })
     // Remove car file from disk
     // fs.rmSync(`${config.carPath}/${jsonResponse['PieceCid']}.car`, {
     //   recursive: true,
