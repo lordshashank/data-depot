@@ -9,4 +9,6 @@ services:
     ports:
       - '8000:8000'
     volumes:
-      - ${DATA_PATH}:/data
+      - data-depot:/data
+volumes:
+  data-depot:
